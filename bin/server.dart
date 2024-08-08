@@ -13,7 +13,7 @@ void main(List<String> args) async {
   await DBConfig.connection.then((connection) async {
 
     final router = Router();
-    router.mount('/auth', AuthRoutes(connection).router.call);
+    router.mount('/api', AuthRoutes(connection).router.call);
 
     // Configure a pipeline that logs requests.
     final handler = Pipeline()

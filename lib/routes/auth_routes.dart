@@ -11,10 +11,10 @@ class AuthRoutes{
   AuthHandler get _authHandler => AuthHandler(connection);
 
   Router get router => Router()
-    ..post('/login', _authHandler.login)
-    ..post('/send_otp', _authHandler.sendOtp)
-    ..post('/match_otp', _authHandler.matchOtp)
-    ..put('/reset_password', _authHandler.resetPassword)
-    ..put('/change_password', _authHandler.changePassword)
-    ..post('/registration', _authHandler.register);
+    ..post('/auth/login', _authHandler.login)
+    ..post('/auth/send_otp', _authHandler.sendOtp)
+    ..post('/auth/match_otp', _authHandler.matchOtp)
+    ..put('/auth/reset_password', _authHandler.resetPassword)
+    ..put('/auth/change_password', _authHandler.changePassword)
+    ..post('/auth/registration', _authHandler.register);
 }

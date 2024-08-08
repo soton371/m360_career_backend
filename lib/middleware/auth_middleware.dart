@@ -8,10 +8,10 @@ import '../utilities/utilities.dart';
 class AuthMiddleware {
   static Middleware checkAuthentication() => (innerHandler) {
     return (request) {
-      if (request.url != Uri.parse("auth/login") &&
-          request.url != Uri.parse("auth/registration")&&
-          request.url != Uri.parse("auth/match_otp")&&
-          request.url != Uri.parse("auth/send_otp")) {
+      if (request.url != Uri.parse("api/auth/login") &&
+          request.url != Uri.parse("api/auth/registration")&&
+          request.url != Uri.parse("api/auth/match_otp")&&
+          request.url != Uri.parse("api/auth/send_otp")) {
         final token = extractToken(request);
         if (token != null) {
           final verify = JWT.tryVerify(token, SecretKey(secreteKey));
