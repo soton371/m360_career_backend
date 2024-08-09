@@ -183,15 +183,15 @@ class AuthHandler {
         int receivedOtpCount =
             (int.tryParse(checkEmailOtp.first[3].toString()) ?? 0) + 1;
 
-        if (receivedOtpCount > 3) {
-          Future.delayed(Duration(minutes: 3), () async {
+        if (receivedOtpCount > 5) {
+          Future.delayed(Duration(minutes: 2), () async {
             deleteEmailOtp(req.email.trim());
           });
           return Response.badRequest(
               body: responseModelToJson(ResponseModel(
                   success: false,
                   message:
-                  "You are blocked for 3 minutes for sending OTP code.",
+                  "You are blocked for 2 minutes for sending OTP code.",
                   data: null)));
         }
 
