@@ -154,14 +154,6 @@ class AuthHandler {
   Future<Response> saveEmailOtp(SendOtpModel req) async {
     try {
       final otp = generateOTP();
-      final sent = await sendOTPSMTP(req.email, otp);
-      if (!sent) {
-        return Response.internalServerError(
-            body: responseModelToJson(ResponseModel(
-                success: false,
-                message: "Failed to send otp code.",
-                data: null)));
-      }
 
       final checkEmailOtp = await connection.execute(
           Sql.named("SELECT * FROM email_otp WHERE email=@email"),
@@ -177,11 +169,19 @@ class AuthHandler {
               "otp_send_time": DateTime.now().toString(),
               "received_otp_count": 1,
             });
+        final sent = await sendOTPSMTP(req.email, otp);
+        if (!sent) {
+          return Response.internalServerError(
+              body: responseModelToJson(ResponseModel(
+                  success: false,
+                  message: "Failed to send otp code.",
+                  data: null)));
+        }
         return Response.ok(responseModelToJson(ResponseModel(
             success: true, message: "OTP code sent successfully", data: null)));
       } else {
         int receivedOtpCount =
-            (int.tryParse(checkEmailOtp.first[4].toString()) ?? 0) + 1;
+            (int.tryParse(checkEmailOtp.first[3].toString()) ?? 0) + 1;
 
         if (receivedOtpCount > 3) {
           Future.delayed(Duration(minutes: 3), () async {
@@ -205,11 +205,20 @@ class AuthHandler {
               "received_otp_count": receivedOtpCount,
             });
 
+        final sent = await sendOTPSMTP(req.email, otp);
+        if (!sent) {
+          return Response.internalServerError(
+              body: responseModelToJson(ResponseModel(
+                  success: false,
+                  message: "Failed to send otp code.",
+                  data: null)));
+        }
+
         return Response.ok(responseModelToJson(ResponseModel(
             success: true, message: "OTP code sent successfully", data: null)));
       }
-    } catch (e) {
-      print("saveEmailOtp e: $e");
+    } catch (e,l) {
+      print("saveEmailOtp e: $e, line: $l");
       return Response.internalServerError(
           body: responseModelToJson(ResponseModel(
               success: false,
