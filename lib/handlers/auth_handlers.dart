@@ -88,6 +88,7 @@ class AuthHandler {
               data: null)));
     }
   }
+
   //end for send otp
 
   //for register
@@ -104,9 +105,9 @@ class AuthHandler {
       }
 
       final matchOtpResponse =
-      await matchOtpRegistration(email: req.email, otp: req.otp.toString());
+          await matchOtpRegistration(email: req.email, otp: req.otp.toString());
       final responseModel =
-      responseModelFromJson(await matchOtpResponse.readAsString());
+          responseModelFromJson(await matchOtpResponse.readAsString());
 
       if (responseModel.success) {
         await connection.execute(
@@ -118,14 +119,40 @@ class AuthHandler {
               "password": _hashString(req.password)
             });
 
-        Map<String, dynamic> data = {...req.toJson()};
-        data.remove('password');
+        // Map<String, dynamic> data = {...req.toJson()};
+        // data.remove('password');
 
-        final responseData = ResponseModel(
-            success: true,
-            message: "User registration has been successful.",
-            data: data);
-        return Response.ok(responseModelToJson(responseData));
+        final checkUserInfo = await connection.execute(
+            Sql.named(
+                "SELECT * FROM users WHERE email=@email AND password=@password"),
+            parameters: {
+              "email": req.email,
+              "password": _hashString(req.password)
+            });
+
+        if (checkUserInfo.isNotEmpty) {
+          Map<String, dynamic> result = {
+            "user_id": checkUserInfo.first[0],
+            "full_name": checkUserInfo.first[1],
+            "email": checkUserInfo.first[2],
+            "user_image": checkUserInfo.first[4],
+          };
+
+          final token = _generateToken(result);
+
+          result["token"] = token;
+
+          final responseData = ResponseModel(
+              success: true,
+              message: "User registration has been successful.",
+              data: result);
+          return Response.ok(responseModelToJson(responseData));
+        } else {
+          return Response.notFound(responseModelToJson(ResponseModel(
+              success: false,
+              message: "User registration failed.",
+              data: null)));
+        }
       } else {
         return Response.ok(responseModelToJson(responseModel));
       }
@@ -191,7 +218,7 @@ class AuthHandler {
               body: responseModelToJson(ResponseModel(
                   success: false,
                   message:
-                  "You are blocked for 2 minutes for sending OTP code.",
+                      "You are blocked for 2 minutes for sending OTP code.",
                   data: null)));
         }
 
@@ -217,7 +244,7 @@ class AuthHandler {
         return Response.ok(responseModelToJson(ResponseModel(
             success: true, message: "OTP code sent successfully", data: null)));
       }
-    } catch (e,l) {
+    } catch (e, l) {
       print("saveEmailOtp e: $e, line: $l");
       return Response.internalServerError(
           body: responseModelToJson(ResponseModel(
@@ -295,12 +322,10 @@ class AuthHandler {
 
       if (storeOtp == myHashOtp) {
         deleteEmailOtp(email.trim());
-        final tokenMatchOtp = _generateToken(
-            {"email": email, "otp": otp, "send_otp_time": sendOtpTime});
         return Response.ok(responseModelToJson(ResponseModel(
             success: true,
             message: "Your OTP code has been matched.",
-            data: {"token": tokenMatchOtp})));
+            data: null)));
       } else {
         return Response.ok(responseModelToJson(ResponseModel(
             success: false, message: "OTP code does not match.", data: null)));
@@ -324,7 +349,7 @@ class AuthHandler {
   Future<Response> resetPassword(Request request) async {
     try {
       final resetPasswordModel =
-      resetPasswordModelFromJson(await request.readAsString());
+          resetPasswordModelFromJson(await request.readAsString());
 
       if (resetPasswordModel.password.length < 6) {
         return Response.badRequest(
@@ -355,7 +380,7 @@ class AuthHandler {
   Future<Response> changePassword(Request request) async {
     try {
       final changePasswordModel =
-      changePasswordModelFromJson(await request.readAsString());
+          changePasswordModelFromJson(await request.readAsString());
 
       if (changePasswordModel.currentPassword ==
           changePasswordModel.newPassword) {
@@ -363,7 +388,7 @@ class AuthHandler {
             body: responseModelToJson(ResponseModel(
                 success: false,
                 message:
-                "The current password and the new password are the same.",
+                    "The current password and the new password are the same.",
                 data: null)));
       }
 
@@ -416,4 +441,3 @@ class AuthHandler {
     }
   }
 }
-
