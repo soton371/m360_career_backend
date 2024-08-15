@@ -29,7 +29,8 @@ class AuthHandler {
         Map<String, dynamic> result = {
           "user_id": checkUser.first[0],
           "full_name": checkUser.first[1],
-          "email": checkUser.first[2]
+          "email": checkUser.first[2],
+          "user_image": checkUser.first[4],
         };
 
         final token = _generateToken(result);
@@ -308,7 +309,7 @@ class AuthHandler {
           Sql.named("SELECT * FROM email_otp WHERE email=@email"),
           parameters: {"email": email});
 
-      final sendOtpTime = DateTime.tryParse(checkEmailOtp.first[3].toString());
+      final sendOtpTime = DateTime.tryParse(checkEmailOtp.first[2].toString());
       if (sendOtpTime != null &&
           (sendOtpTime.difference(DateTime.now()).inMinutes < -3)) {
         return Response.forbidden(responseModelToJson(ResponseModel(
@@ -317,8 +318,9 @@ class AuthHandler {
             data: null)));
       }
 
-      final storeOtp = checkEmailOtp.first[2].toString();
+      final storeOtp = checkEmailOtp.first[1].toString();
       final myHashOtp = _hashString(otp);
+
 
       if (storeOtp == myHashOtp) {
         deleteEmailOtp(email.trim());
