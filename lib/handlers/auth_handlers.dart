@@ -22,7 +22,7 @@ class AuthHandler {
               "SELECT * FROM users WHERE email=@email AND password=@password"),
           parameters: {
             "email": req.email,
-            "password": _hashString(req.password)
+            "password": _hashString(req.password??'')
           });
 
       if (checkUser.isNotEmpty) {
@@ -97,7 +97,7 @@ class AuthHandler {
     try {
       final req = userModelFromJson(await request.readAsString());
 
-      if (req.password.length < 6) {
+      if ((req.password??'').length < 6) {
         return Response.badRequest(
             body: responseModelToJson(ResponseModel(
                 success: false,
@@ -117,7 +117,7 @@ class AuthHandler {
             parameters: {
               "full_name": req.fullName,
               "email": req.email,
-              "password": _hashString(req.password)
+              "password": _hashString(req.password??'')
             });
 
         // Map<String, dynamic> data = {...req.toJson()};
@@ -128,7 +128,7 @@ class AuthHandler {
                 "SELECT * FROM users WHERE email=@email AND password=@password"),
             parameters: {
               "email": req.email,
-              "password": _hashString(req.password)
+              "password": _hashString(req.password??'')
             });
 
         if (checkUserInfo.isNotEmpty) {

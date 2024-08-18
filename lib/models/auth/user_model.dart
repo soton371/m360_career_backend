@@ -13,15 +13,19 @@ class UserModel {
   final int? userId;
   final String? fullName;
   final String email;
-  final String password;
+  final String? password;
   final String? otp;
+  final String? userImage;
+  final bool? googleSignIn;
 
   UserModel({
     this.userId,
     this.fullName,
     required this.email,
-    required this.password,
+    this.password,
     this.otp,
+    this.userImage,
+    this.googleSignIn,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -30,11 +34,15 @@ class UserModel {
     email: json["email"],
     password: json["password"],
     otp: json["otp"],
+    userImage: json["user_image"],
+    googleSignIn: json["google_signin"],
   );
 
   Map<String, dynamic> toJson() => {
     "full_name": fullName,
     "email": email,
     "password": password,
+    "user_image": userImage,
+    "google_signin": googleSignIn,
   };
 }
