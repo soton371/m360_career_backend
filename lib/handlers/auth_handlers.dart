@@ -17,12 +17,14 @@ class AuthHandler {
     try {
       final req = userModelFromJson(await request.readAsString());
 
+      print("object password: ${req.password}");
+
       final checkUser = await connection.execute(
           Sql.named(
               "SELECT * FROM users WHERE email=@email AND password=@password"),
           parameters: {
             "email": req.email,
-            "password": _hashString(req.password??'')
+            "password": req.password
           });
 
       if (checkUser.isNotEmpty) {
