@@ -7,6 +7,7 @@ import 'dart:convert';
 UserModel userModelFromJson(String str) => UserModel.fromJson(json.decode(str));
 
 String userModelToJson(UserModel data) => json.encode(data.toJson());
+String userModelResponseJson(UserModel data) => json.encode(data.responseJson());
 
 
 class UserModel {
@@ -17,6 +18,8 @@ class UserModel {
   final String? otp;
   final String? userImage;
   final bool? googleSignIn;
+  final String? accessToken;
+  final String? refreshToken;
 
   UserModel({
     this.userId,
@@ -26,6 +29,8 @@ class UserModel {
     this.otp,
     this.userImage,
     this.googleSignIn,
+    this.accessToken,
+    this.refreshToken,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -44,5 +49,15 @@ class UserModel {
     "password": password,
     "user_image": userImage,
     "google_signin": googleSignIn,
+  };
+
+  //create responseJson
+  Map<String, dynamic> responseJson() => {
+    "user_id": userId,
+    "full_name": fullName,
+    "email": email,
+    "user_image": userImage,
+    "access_token": accessToken,
+    "refresh_token": refreshToken,
   };
 }

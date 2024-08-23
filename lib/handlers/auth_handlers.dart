@@ -24,20 +24,41 @@ class AuthHandler {
           });
 
       if (checkUser.isNotEmpty) {
-        Map<String, dynamic> result = {
-          "user_id": checkUser.first[0],
-          "full_name": checkUser.first[1],
-          "email": checkUser.first[2],
-          "user_image": checkUser.first[4],
-        };
+        // Map<String, dynamic> result = {
+        //   "user_id": checkUser.first[0],
+        //   "full_name": checkUser.first[1],
+        //   "email": checkUser.first[2],
+        //   "user_image": checkUser.first[4],
+        // };
+        //
+        // result['access_token'] = generateAccessToken(result);
+        //
+        // final newRefreshToken = generateRefreshToken(result['user_id']);
+        // result['refresh_token'] = newRefreshToken;
 
-        result['access_token'] = generateAccessToken(result);
-        result['refresh_token'] = generateRefreshToken(result['user_id']);
+        final userId = int.parse(checkUser.first[0].toString());
+        final newRefreshToken = generateRefreshToken(userId);
 
-        final loginResponse = responseModelToJson(ResponseModel(
-            success: true, message: "Login success.", data: result));
+        await connection.execute(
+            Sql.named(
+                "UPDATE users SET refresh_token=@refreshToken WHERE user_id=@userId"),
+            parameters: {
+              "userId": userId,
+              "refreshToken": newRefreshToken
+            });
 
-        return Response.ok(loginResponse);
+        // final loginResponse = responseModelToJson(ResponseModel(
+        //     success: true, message: "Login success.", data: result));
+
+        return Response.ok(responseModelToJson(ResponseModel(success: true, message: "Login success.", data: userModelResponseJson(
+            UserModel(
+                userId: userId,
+                fullName: checkUser.first[1].toString(),
+                email: checkUser.first[2].toString(),
+                userImage: checkUser.first[4].toString(),
+                accessToken: generateAccessToken(userId),
+                refreshToken: newRefreshToken
+        )))));
       } else {
         return Response.notFound(responseModelToJson(ResponseModel(
             success: false,
@@ -128,21 +149,26 @@ class AuthHandler {
             });
 
         if (checkUserInfo.isNotEmpty) {
-          Map<String, dynamic> result = {
-            "user_id": checkUserInfo.first[0],
-            "full_name": checkUserInfo.first[1],
-            "email": checkUserInfo.first[2],
-            "user_image": checkUserInfo.first[4],
-          };
+          final userId = int.parse(checkUserInfo.first[0].toString());
+          final newRefreshToken = generateRefreshToken(userId);
 
-          result["access_token"] = generateAccessToken(result);
-          result['refresh_token'] = generateRefreshToken(result['user_id']);
+          await connection.execute(
+              Sql.named(
+                  "UPDATE users SET refresh_token=@refreshToken WHERE user_id=@userId"),
+              parameters: {
+                "userId": userId,
+                "refreshToken": newRefreshToken
+              });
 
-          final responseData = ResponseModel(
-              success: true,
-              message: "User registration has been successful.",
-              data: result);
-          return Response.ok(responseModelToJson(responseData));
+          return Response.ok(
+            responseModelToJson(ResponseModel(success: true, message: "User registration has been successful.", data: userModelResponseJson(UserModel(
+                userId: userId,
+                fullName: checkUserInfo.first[1].toString(),
+                email: checkUserInfo.first[2].toString(),
+                userImage: checkUserInfo.first[4].toString(),
+                accessToken: generateAccessToken(userId),
+                refreshToken: newRefreshToken))))
+          );
         } else {
           return Response.notFound(responseModelToJson(ResponseModel(
               success: false,
@@ -262,11 +288,7 @@ class AuthHandler {
       if (storeOtp == myHashOtp) {
         deleteEmailOtp(matchOtpModel.email.trim());
 
-        final tokenMatchOtp = generateAccessToken({
-          "email": matchOtpModel.email,
-          "otp": matchOtpModel.otp,
-          "send_otp_time": sendOtpTime.toString()
-        });
+        final tokenMatchOtp = generateAccessToken(0);
         return Response.ok(responseModelToJson(ResponseModel(
             success: true,
             message: "Your OTP code has been matched.",
@@ -433,7 +455,7 @@ class AuthHandler {
       //verify refresh token
       final verify = JWT.tryVerify(
           refreshTokenModel.refreshToken ?? '', SecretKey(kRefreshSecreteKey));
-      if(verify == null){
+      if (verify == null) {
         return Response.badRequest(
             body: responseModelToJson(ResponseModel(
                 success: false,
@@ -441,11 +463,47 @@ class AuthHandler {
                 data: null)));
       }
 
+      //take userId
+      final userId = verify.payload['user_id'];
+      if (userId == null) {
+        return Response.badRequest(
+            body: responseModelToJson(ResponseModel(
+                success: false,
+                message: "Invalid refresh token.",
+                data: null)));
+      }
+
+      //query from user table
+      final user = await connection.execute(
+          Sql.named(
+              "SELECT * FROM users WHERE user_id=@userId AND refresh_token=@refreshToken"),
+          parameters: {
+            "userId": userId,
+            "refreshToken": refreshTokenModel.refreshToken
+          });
+
+      if (user.isEmpty) {
+        return Response.notFound(responseModelToJson(ResponseModel(
+            success: false, message: "Invalid refresh token.", data: null)));
+      }
+
+      //update refresh token
+      final newRefreshToken = generateRefreshToken(userId);
+      await connection.execute(
+          Sql.named(
+              "UPDATE users SET refresh_token=@refreshToken WHERE user_id=@userId"),
+          parameters: {"userId": userId, "refreshToken": newRefreshToken});
+
       return Response.ok(responseModelToJson(ResponseModel(
           success: true,
           message: "Generate new token",
-          data: refreshTokenModelToJson(RefreshTokenModel(
-              accessToken: 'access token', refreshToken: 'refresh token')))));
+          data: userModelResponseJson(UserModel(
+              userId: int.parse(user.first[0].toString()),
+              fullName: user.first[1].toString(),
+              email: user.first[2].toString(),
+              userImage: user.first[4].toString(),
+              accessToken: generateAccessToken(userId),
+              refreshToken: newRefreshToken)))));
     } catch (e) {
       print("refreshToken e: $e");
       return Response.internalServerError(

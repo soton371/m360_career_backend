@@ -10,20 +10,16 @@ String refreshTokenModelToJson(RefreshTokenModel data) => json.encode(data.toJso
 
 class RefreshTokenModel {
   final String? refreshToken;
-  final String? accessToken;
 
   RefreshTokenModel({
     this.refreshToken,
-    this.accessToken,
   });
 
   factory RefreshTokenModel.fromJson(Map<String, dynamic> json) => RefreshTokenModel(
     refreshToken: json["refresh_token"],
-    accessToken: json["access_token"],
   );
 
   Map<String, dynamic> toJson() => {
     "refresh_token": refreshToken,
-    "access_token": accessToken,
   };
 }
