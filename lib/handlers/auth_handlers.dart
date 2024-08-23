@@ -14,14 +14,12 @@ class AuthHandler {
     try {
       final req = userModelFromJson(await request.readAsString());
 
-      print("object password: ${req.password}");
-
       final checkUser = await connection.execute(
           Sql.named(
               "SELECT * FROM users WHERE email=@email AND password=@password"),
           parameters: {
             "email": req.email,
-            "password": req.password
+            "password": hashString(req.password??'')
           });
 
       if (checkUser.isNotEmpty) {
@@ -32,12 +30,14 @@ class AuthHandler {
           "user_image": checkUser.first[4],
         };
 
-        final token = generateToken(result);
 
-        result['token'] = token;
+        result['access_token'] = generateAccessToken(result);
+        result['refresh_token'] = generateRefreshToken(result['user_id']);
 
-        return Response.ok(responseModelToJson(ResponseModel(
-            success: true, message: "Login success.", data: result)));
+        final loginResponse = responseModelToJson(ResponseModel(
+            success: true, message: "Login success.", data: result));
+
+        return Response.ok(loginResponse);
       } else {
         return Response.notFound(responseModelToJson(ResponseModel(
             success: false,
@@ -119,8 +119,6 @@ class AuthHandler {
               "password": hashString(req.password??'')
             });
 
-        // Map<String, dynamic> data = {...req.toJson()};
-        // data.remove('password');
 
         final checkUserInfo = await connection.execute(
             Sql.named(
@@ -138,9 +136,9 @@ class AuthHandler {
             "user_image": checkUserInfo.first[4],
           };
 
-          final token = generateToken(result);
 
-          result["token"] = token;
+          result["access_token"] = generateAccessToken(result);
+          result['refresh_token'] = generateRefreshToken(result['user_id']);
 
           final responseData = ResponseModel(
               success: true,
@@ -266,7 +264,7 @@ class AuthHandler {
       if (storeOtp == myHashOtp) {
         deleteEmailOtp(matchOtpModel.email.trim());
 
-        final tokenMatchOtp = generateToken({
+        final tokenMatchOtp = generateAccessToken({
           "email": matchOtpModel.email,
           "otp": matchOtpModel.otp,
           "send_otp_time": sendOtpTime.toString()

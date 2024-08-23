@@ -25,7 +25,12 @@ String hashString(String password) {
   return digest.toString();
 }
 
-String generateToken(Map<String, dynamic> payload) {
+String generateAccessToken(Map<String, dynamic> payload) {
   final jwt = JWT(payload);
   return jwt.sign(SecretKey(kSecreteKey));
+}
+
+String generateRefreshToken(int userId) {
+  final jwt = JWT({"user_id": userId});
+  return jwt.sign(SecretKey(kRefreshSecreteKey));
 }
