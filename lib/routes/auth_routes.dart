@@ -16,5 +16,6 @@ class AuthRoutes{
     ..post('/auth/match_otp', _authHandler.matchOtp)
     ..put('/auth/reset_password', _authHandler.resetPassword)
     ..put('/auth/change_password', _authHandler.changePassword)
+    ..post('/auth/refresh_token', _authHandler.refreshToken)
     ..post('/auth/registration', _authHandler.register);
 }

@@ -1,4 +1,5 @@
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:m360_career_backend/configs/constants.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import '../models/models.dart';
@@ -19,7 +20,7 @@ class AuthHandler {
               "SELECT * FROM users WHERE email=@email AND password=@password"),
           parameters: {
             "email": req.email,
-            "password": hashString(req.password??'')
+            "password": hashString(req.password ?? '')
           });
 
       if (checkUser.isNotEmpty) {
@@ -29,7 +30,6 @@ class AuthHandler {
           "email": checkUser.first[2],
           "user_image": checkUser.first[4],
         };
-
 
         result['access_token'] = generateAccessToken(result);
         result['refresh_token'] = generateRefreshToken(result['user_id']);
@@ -96,7 +96,7 @@ class AuthHandler {
     try {
       final req = userModelFromJson(await request.readAsString());
 
-      if ((req.password??'').length < 6) {
+      if ((req.password ?? '').length < 6) {
         return Response.badRequest(
             body: responseModelToJson(ResponseModel(
                 success: false,
@@ -116,16 +116,15 @@ class AuthHandler {
             parameters: {
               "full_name": req.fullName,
               "email": req.email,
-              "password": hashString(req.password??'')
+              "password": hashString(req.password ?? '')
             });
-
 
         final checkUserInfo = await connection.execute(
             Sql.named(
                 "SELECT * FROM users WHERE email=@email AND password=@password"),
             parameters: {
               "email": req.email,
-              "password": hashString(req.password??'')
+              "password": hashString(req.password ?? '')
             });
 
         if (checkUserInfo.isNotEmpty) {
@@ -135,7 +134,6 @@ class AuthHandler {
             "email": checkUserInfo.first[2],
             "user_image": checkUserInfo.first[4],
           };
-
 
           result["access_token"] = generateAccessToken(result);
           result['refresh_token'] = generateRefreshToken(result['user_id']);
@@ -307,7 +305,6 @@ class AuthHandler {
       final storeOtp = checkEmailOtp.first[1].toString();
       final myHashOtp = hashString(otp);
 
-
       if (storeOtp == myHashOtp) {
         deleteEmailOtp(email.trim());
         return Response.ok(responseModelToJson(ResponseModel(
@@ -425,6 +422,36 @@ class AuthHandler {
           body: responseModelToJson(ResponseModel(
               success: false,
               message: "Failed to change password.",
+              data: null)));
+    }
+  }
+
+  Future<Response> refreshToken(Request request) async {
+    try {
+      final refreshTokenModel =
+          refreshTokenModelFromJson(await request.readAsString());
+      //verify refresh token
+      final verify = JWT.tryVerify(
+          refreshTokenModel.refreshToken ?? '', SecretKey(kRefreshSecreteKey));
+      if(verify == null){
+        return Response.badRequest(
+            body: responseModelToJson(ResponseModel(
+                success: false,
+                message: "Invalid refresh token.",
+                data: null)));
+      }
+
+      return Response.ok(responseModelToJson(ResponseModel(
+          success: true,
+          message: "Generate new token",
+          data: refreshTokenModelToJson(RefreshTokenModel(
+              accessToken: 'access token', refreshToken: 'refresh token')))));
+    } catch (e) {
+      print("refreshToken e: $e");
+      return Response.internalServerError(
+          body: responseModelToJson(ResponseModel(
+              success: false,
+              message: "Failed to refresh token.",
               data: null)));
     }
   }
