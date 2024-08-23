@@ -1,3 +1,8 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:m360_career_backend/configs/constants.dart';
 import 'package:shelf/shelf.dart';
 
 String? extractToken(Request request) {
@@ -14,3 +19,13 @@ String? extractToken(Request request) {
   }
 }
 
+String hashString(String password) {
+  final bytes = utf8.encode(password);
+  final digest = sha256.convert(bytes);
+  return digest.toString();
+}
+
+String generateToken(Map<String, dynamic> payload) {
+  final jwt = JWT(payload);
+  return jwt.sign(SecretKey(kSecreteKey));
+}

@@ -14,7 +14,7 @@ class AuthMiddleware {
           request.url != Uri.parse("api/auth/send_otp")) {
         final token = extractToken(request);
         if (token != null) {
-          final verify = JWT.tryVerify(token, SecretKey(secreteKey));
+          final verify = JWT.tryVerify(token, SecretKey(kSecreteKey));
           if (verify != null) {
             return innerHandler(request);
           }

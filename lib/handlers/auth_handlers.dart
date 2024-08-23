@@ -1,9 +1,6 @@
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
-import '../configs/configs.dart';
 import '../models/models.dart';
 import '../utilities/utilities.dart';
 
@@ -35,7 +32,7 @@ class AuthHandler {
           "user_image": checkUser.first[4],
         };
 
-        final token = _generateToken(result);
+        final token = generateToken(result);
 
         result['token'] = token;
 
@@ -119,7 +116,7 @@ class AuthHandler {
             parameters: {
               "full_name": req.fullName,
               "email": req.email,
-              "password": _hashString(req.password??'')
+              "password": hashString(req.password??'')
             });
 
         // Map<String, dynamic> data = {...req.toJson()};
@@ -130,7 +127,7 @@ class AuthHandler {
                 "SELECT * FROM users WHERE email=@email AND password=@password"),
             parameters: {
               "email": req.email,
-              "password": _hashString(req.password??'')
+              "password": hashString(req.password??'')
             });
 
         if (checkUserInfo.isNotEmpty) {
@@ -141,7 +138,7 @@ class AuthHandler {
             "user_image": checkUserInfo.first[4],
           };
 
-          final token = _generateToken(result);
+          final token = generateToken(result);
 
           result["token"] = token;
 
@@ -169,17 +166,6 @@ class AuthHandler {
     }
   }
 
-  String _hashString(String password) {
-    final bytes = utf8.encode(password);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
-  String _generateToken(Map<String, dynamic> payload) {
-    final jwt = JWT(payload);
-    return jwt.sign(SecretKey(secreteKey));
-  }
-
   //for send otp & save
   Future<Response> saveEmailOtp(SendOtpModel req) async {
     try {
@@ -195,7 +181,7 @@ class AuthHandler {
                 "INSERT INTO email_otp (email, otp_code, otp_send_time, received_otp_count) VALUES (@email, @otp_code, @otp_send_time, @received_otp_count)"),
             parameters: {
               "email": req.email,
-              "otp_code": _hashString(otp),
+              "otp_code": hashString(otp),
               "otp_send_time": DateTime.now().toString(),
               "received_otp_count": 1,
             });
@@ -230,7 +216,7 @@ class AuthHandler {
                 "UPDATE email_otp SET email=@email, otp_code=@otp_code, otp_send_time=@otp_send_time, received_otp_count=@received_otp_count WHERE email=@email"),
             parameters: {
               "email": req.email,
-              "otp_code": _hashString(otp),
+              "otp_code": hashString(otp),
               "otp_send_time": DateTime.now().toString(),
               "received_otp_count": receivedOtpCount,
             });
@@ -275,12 +261,12 @@ class AuthHandler {
       }
 
       final storeOtp = checkEmailOtp.first[1].toString();
-      final myHashOtp = _hashString(matchOtpModel.otp);
+      final myHashOtp = hashString(matchOtpModel.otp);
 
       if (storeOtp == myHashOtp) {
         deleteEmailOtp(matchOtpModel.email.trim());
 
-        final tokenMatchOtp = _generateToken({
+        final tokenMatchOtp = generateToken({
           "email": matchOtpModel.email,
           "otp": matchOtpModel.otp,
           "send_otp_time": sendOtpTime.toString()
@@ -321,7 +307,7 @@ class AuthHandler {
       }
 
       final storeOtp = checkEmailOtp.first[1].toString();
-      final myHashOtp = _hashString(otp);
+      final myHashOtp = hashString(otp);
 
 
       if (storeOtp == myHashOtp) {
@@ -367,7 +353,7 @@ class AuthHandler {
           Sql.named("UPDATE users SET password=@password WHERE email=@email"),
           parameters: {
             "email": resetPasswordModel.email,
-            "password": _hashString(resetPasswordModel.password)
+            "password": hashString(resetPasswordModel.password)
           });
       return Response.ok(responseModelToJson(ResponseModel(
           success: true, message: "Password successfully reset.", data: null)));
@@ -413,7 +399,7 @@ class AuthHandler {
               "SELECT * FROM users WHERE user_id=@userId AND password=@currentPassword"),
           parameters: {
             "userId": userId.toString(),
-            "currentPassword": _hashString(changePasswordModel.currentPassword),
+            "currentPassword": hashString(changePasswordModel.currentPassword),
           });
 
       if (user.isEmpty) {
@@ -428,7 +414,7 @@ class AuthHandler {
               "UPDATE users SET password=@newPassword WHERE user_id=@userId"),
           parameters: {
             "userId": userId.toString(),
-            "newPassword": _hashString(changePasswordModel.newPassword)
+            "newPassword": hashString(changePasswordModel.newPassword)
           });
 
       return Response.ok(responseModelToJson(ResponseModel(
