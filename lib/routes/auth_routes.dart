@@ -17,5 +17,6 @@ class AuthRoutes{
     ..put('/auth/reset_password', _authHandler.resetPassword)
     ..put('/auth/change_password', _authHandler.changePassword)
     ..post('/auth/refresh_token', _authHandler.refreshToken)
+    ..post('/auth/google_sign_in', _authHandler.googleSignIn)
     ..post('/auth/registration', _authHandler.register);
 }

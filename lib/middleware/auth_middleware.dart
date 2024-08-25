@@ -12,6 +12,7 @@ class AuthMiddleware {
           request.url != Uri.parse("api/auth/registration")&&
           request.url != Uri.parse("api/auth/match_otp")&&
           request.url != Uri.parse("api/auth/refresh_token")&&
+          request.url != Uri.parse("api/auth/google_sign_in")&&
           request.url != Uri.parse("api/auth/send_otp")) {
         final token = extractToken(request);
         if (token != null) {

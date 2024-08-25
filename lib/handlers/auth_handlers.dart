@@ -513,4 +513,85 @@ class AuthHandler {
               data: null)));
     }
   }
+
+  //for google sign in
+  Future<Response> googleSignIn(Request request) async {
+    try{
+      final userModel = userModelFromJson(await request.readAsString());
+      final checkUser = await connection.execute(
+          Sql.named(
+              "SELECT * FROM users WHERE email=@email"),
+          parameters: {
+            "email": userModel.email,
+          });
+
+      if(checkUser.isNotEmpty){
+        final userId = int.parse(checkUser.first[0].toString());
+        final newRefreshToken = generateRefreshToken(userId);
+        await connection.execute(
+            Sql.named(
+                "UPDATE users SET refresh_token=@refreshToken WHERE user_id=@userId"),
+            parameters: {"userId": userId, "refreshToken": newRefreshToken});
+
+        return Response.ok(responseModelToJson(ResponseModel(
+            success: true,
+            message: "Google Sign in successfully",
+            data: userModelResponseJson(UserModel(
+                userId: userId,
+                fullName: checkUser.first[1].toString(),
+                email: checkUser.first[2].toString(),
+                userImage: checkUser.first[4].toString(),
+                accessToken: generateAccessToken(userId),
+                refreshToken: newRefreshToken)))));
+      }
+
+      await connection.execute(
+          Sql.named(
+              "INSERT INTO users (full_name, email, user_image, google_signin) VALUES (@full_name, @email, @user_image, @google_signin)"),
+          parameters: {
+            "full_name": userModel.fullName,
+            "email": userModel.email,
+            "user_image": userModel.userImage,
+            "google_signin": true
+          });
+
+      final checkUserInfo = await connection.execute(
+          Sql.named(
+              "SELECT * FROM users WHERE email=@email AND google_signin=@google_signin"),
+          parameters: {
+            "email": userModel.email,
+            "google_signin": true
+          });
+
+      final userId = int.parse(checkUserInfo.first[0].toString());
+      final newRefreshToken = generateRefreshToken(userId);
+
+      await connection.execute(
+          Sql.named(
+              "UPDATE users SET refresh_token=@refreshToken WHERE user_id=@userId"),
+          parameters: {
+            "userId": userId,
+            "refreshToken": newRefreshToken
+          });
+
+      return Response.ok(
+          responseModelToJson(ResponseModel(success: true, message: "Google Sign in successfully", data: userModelResponseJson(UserModel(
+              userId: userId,
+              fullName: checkUserInfo.first[1].toString(),
+              email: checkUserInfo.first[2].toString(),
+              userImage: checkUserInfo.first[4].toString(),
+              accessToken: generateAccessToken(userId),
+              refreshToken: newRefreshToken))))
+      );
+
+    }catch(e){
+      print("googleSignIn e: $e");
+      return Response.internalServerError(
+          body: responseModelToJson(ResponseModel(
+              success: false,
+              message: "Failed to google sign.",
+              data: null)));
+    }
+  }
+
 }
